@@ -53,6 +53,10 @@ class ClockApp(tk.Tk):
         self.set_timer_button = tk.Button(self, text="设置定时器", command=self.set_timer, font=('Helvetica', 14))
         self.set_timer_button.pack()
 
+        # 创建一个按钮，点击后开始跳出世界时钟界面
+        self.set_timer_button = tk.Button(self, text="打开世界时钟", command=self.set_world_timer, font=('Helvetica', 14))
+        self.set_timer_button.pack()
+
 
         self.draw_clock() # 调用函数绘制时钟
         self.update_clock() # 根据当前时间更新时钟
@@ -83,6 +87,9 @@ class ClockApp(tk.Tk):
     def set_timer(self):
         count_down_timer_app = CountdownTimerApp()
 
+    # 该函数用于设置世界时钟
+    def set_world_timer(self):
+        world_clock_app = WorldClockApp()
 
     def toggle_time_format(self):
         current_format=self.time_format.get()
@@ -226,6 +233,104 @@ class CountdownTimerApp(tk.Tk):
         self.timer_running = False
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
+
+
+class WorldClockApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("世界时钟")
+        self.geometry("1200x600")
+        self.configure(bg='white')
+
+        self.motto_label = tk.Label(self, text="欢迎使用世界时钟系统！", font=('楷体', 16, 'bold'), bg='white')
+        self.motto_label.pack()
+
+        self.clock_frames = []  # 存储时钟小部件的列表
+        self.time_formats = []  # 存储时制标签的列表
+        self.locations = ['UTC', 'New York', 'London', 'Paris', 'Tokyo']  # 添加不同城市的时钟
+
+        for location in self.locations:
+            frame = tk.Frame(self, bg='white')
+            frame.pack(side=tk.LEFT, padx=20)
+            label = tk.Label(frame, text=location, font=('Helvetica', 16), bg='white')
+            label.pack()
+            clock = self.create_clock(frame)
+            self.clock_frames.append(clock)
+            self.time_formats.append(tk.StringVar(value="24小时制"))
+
+        self.update_world_clocks()
+
+    def create_clock(self, frame):
+        canvas = tk.Canvas(frame, width=200, height=180, bg='white', highlightthickness=0)
+        canvas.pack()
+
+        time_label = tk.Label(frame, font=('Helvetica', 16), bg='white')
+        time_label.pack(pady=10)
+
+        self.hour_hand = None
+        self.minute_hand = None
+        self.second_hand = None
+
+        return {
+            'canvas': canvas,
+            'time_label': time_label,
+            'hour_hand': None,
+            'minute_hand': None,
+            'second_hand': None
+        }
+
+    def update_world_clocks(self):
+        for i, location in enumerate(self.locations):
+            current_time = datetime.now()
+            time_format = self.time_formats[i].get()
+            timezone_diff = 0
+
+            if location == 'UTC':
+                timezone_diff = 0
+            elif location == 'New York':
+                timezone_diff = -5
+            elif location == 'London':
+                timezone_diff = 0
+            elif location == 'Paris':
+                timezone_diff = 1
+            elif location == 'Tokyo':
+                timezone_diff = 9
+
+            current_time += timedelta(hours=timezone_diff)
+
+            if time_format == "24小时制":
+                time_str = current_time.strftime('%H:%M:%S')
+            else:
+                time_str = current_time.strftime('%I:%M:%S:%p')
+
+            self.clock_frames[i]['time_label'].config(text=f"{location}: {time_str}")
+
+            self.update_clock(self.clock_frames[i], current_time)
+
+        self.after(1000, self.update_world_clocks)
+
+    def update_clock(self, clock_frame, current_time):
+        hour = current_time.hour
+        minute = current_time.minute
+        second = current_time.second
+
+        if clock_frame['hour_hand']:
+            clock_frame['canvas'].delete(clock_frame['hour_hand'])
+        if clock_frame['minute_hand']:
+            clock_frame['canvas'].delete(clock_frame['minute_hand'])
+
+        hour_angle = ((hour % 12) + minute / 60 + second / 3600) * (2 * pi / 12) - pi / 2
+        hour_length = 40
+        hour_x = 100 + cos(hour_angle) * hour_length
+        hour_y = 90 + sin(hour_angle) * hour_length
+        clock_frame['hour_hand'] = clock_frame['canvas'].create_line(100, 90, hour_x, hour_y, width=4, fill='brown')
+
+        minute_angle = ((minute + second / 60) / 60) * (2 * pi) - pi / 2
+        minute_length = 70
+        minute_x = 100 + cos(minute_angle) * minute_length
+        minute_y = 90 + sin(minute_angle) * minute_length
+        clock_frame['minute_hand'] = clock_frame['canvas'].create_line(100, 90, minute_x, minute_y, width=3, fill='green')
+
 
 if __name__ == "__main__":
     app = ClockApp()
