@@ -1,13 +1,18 @@
 import tkinter as tk
 from math import cos, sin, pi
 from datetime import datetime,timedelta
- 
+
+# 时钟APP类 
 class ClockApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("表盘时钟")
-        self.geometry("800x700")
+        self.geometry("700x650")
         self.configure(bg='white') # 创建gui的title,大小，背景
+        
+        # 创建PhotoImage对象并加载图标图片
+        icon_image = tk.PhotoImage(file="./images/icon.png")
+        self.call('wm', 'iconphoto', self._w, icon_image)
  
         self.motto_label = tk.Label(self, text="欢迎使用时钟系统！",font=('楷体', 16,'bold'), bg='white') # 创建欢迎语
         self.motto_label.pack() # .pack() 是在 tkinter 中用于将部件（widget）显示在窗口上的方法
@@ -49,6 +54,9 @@ class ClockApp(tk.Tk):
         # 用于指示闹钟是否响过
         self.alarm_flag=False
 
+        # 用于指示是否进行过整点报时
+        self.hour_flag=False
+
         # 创建一个按钮，点击后开始设置倒计时
         self.set_timer_button = tk.Button(self, text="设置定时器", command=self.set_timer, font=('Helvetica', 14))
         self.set_timer_button.pack()
@@ -56,7 +64,6 @@ class ClockApp(tk.Tk):
         # 创建一个按钮，点击后开始跳出世界时钟界面
         self.set_timer_button = tk.Button(self, text="打开世界时钟", command=self.set_world_timer, font=('Helvetica', 14))
         self.set_timer_button.pack()
-
 
         self.draw_clock() # 调用函数绘制时钟
         self.update_clock() # 根据当前时间更新时钟
@@ -71,6 +78,7 @@ class ClockApp(tk.Tk):
         if hasattr(self, 'output_error'):
             self.output_error.destroy()
 
+        # 根据输入设置闹钟
         alarm_time_str = self.alarm_entry.get()
         try:
             alarm_time = datetime.strptime(alarm_time_str, '%H:%M')
@@ -91,13 +99,15 @@ class ClockApp(tk.Tk):
     def set_world_timer(self):
         world_clock_app = WorldClockApp()
 
+    # 该函数用于切换24/12小时显示制度
     def toggle_time_format(self):
         current_format=self.time_format.get()
         if current_format == "24小时制":
             self.time_format.set("12小时制")
         else:
             self.time_format.set("24小时制")
- 
+    
+    # 该函数用于绘制表盘与时分秒针
     def draw_clock(self):
         center_x = 200
         center_y = 200
@@ -118,21 +128,34 @@ class ClockApp(tk.Tk):
             hour_x = center_x + cos(angle) * (radius - 25)
             hour_y = center_y + sin(angle) * (radius - 25)
             self.canvas.create_text(hour_x, hour_y, text=str(i+1), font=('Helvetica', 12), fill='black')
- 
+    
+    # 该函数用于更新主表盘的时钟
     def update_clock(self):
         current_time = datetime.now().time()
         current_date = datetime.now().date()
 
+        # 判断是否调用闹钟
         if self.alarm_time is not None and self.alarm_flag is False:
             if current_time.hour==self.alarm_time.hour and current_time.minute==self.alarm_time.minute:
-                popup = tk.Toplevel(self)
-                popup.title("闹钟时间到")
-                alarm_label = tk.Label(popup, text="闹钟时间到！！！")
+                alarm_popup = tk.Toplevel(self)
+                alarm_popup.title("闹钟时间到")
+                alarm_label = tk.Label(alarm_popup, text="闹钟时间到！！！")
                 alarm_label.pack()
-                close_button = tk.Button(popup, text="关闭弹出窗口", command=popup.destroy)
+                close_button = tk.Button(alarm_popup, text="关闭弹出窗口", command=alarm_popup.destroy)
                 close_button.pack()
                 self.alarm_flag=True
-                
+        
+        # 设置整点报时
+        if current_time.minute == 0 and self.hour_flag is False:
+            hour_popup = tk.Toplevel(self)
+            hour_popup.title("整点报时")
+            alarm_label = tk.Label(hour_popup, text="现在是北京时间"+str(current_time.hour)+"点整")
+            alarm_label.pack()
+            close_button = tk.Button(hour_popup, text="关闭弹出窗口", command=hour_popup.destroy)
+            close_button.pack()
+            self.hour_flag=True
+        if current_time.minute!=0 and self.hour_flag is True:
+            self.hour_flag=False
 
         # 根据制度标签更新时间标签
         current_format=self.time_format.get()
@@ -180,7 +203,7 @@ class ClockApp(tk.Tk):
  
         self.after(1000, self.update_clock)
 
-
+# 定时器类
 class CountdownTimerApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -203,6 +226,7 @@ class CountdownTimerApp(tk.Tk):
         self.remaining_time = timedelta()
         self.timer_running = False
 
+    # 开始倒计时
     def start_countdown(self):
         if not self.timer_running:
             input_time = self.time_entry.get()
@@ -217,7 +241,8 @@ class CountdownTimerApp(tk.Tk):
                 self.time_label.config(text="无效的时间格式")
         else:
             self.update_timer()
-
+    
+    # 在倒计时的过程中更新界面
     def update_timer(self):
         if self.remaining_time.total_seconds() > 0:
             self.time_label.config(text=str(self.remaining_time).rjust(8, '0'))
@@ -229,12 +254,13 @@ class CountdownTimerApp(tk.Tk):
             self.start_button.config(state=tk.NORMAL)
             self.stop_button.config(state=tk.DISABLED)
 
+    # 停止倒计时
     def stop_countdown(self):
         self.timer_running = False
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
 
-
+# 世界时钟类
 class WorldClockApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -260,6 +286,7 @@ class WorldClockApp(tk.Tk):
 
         self.update_world_clocks()
 
+    # 创建世界时钟
     def create_clock(self, frame):
         canvas = tk.Canvas(frame, width=200, height=180, bg='white', highlightthickness=0)
         canvas.pack()
@@ -279,6 +306,7 @@ class WorldClockApp(tk.Tk):
             'second_hand': None
         }
 
+    # 更新世界时钟
     def update_world_clocks(self):
         for i, location in enumerate(self.locations):
             current_time = datetime.now()
@@ -309,6 +337,7 @@ class WorldClockApp(tk.Tk):
 
         self.after(1000, self.update_world_clocks)
 
+    # 更新世界时钟指针
     def update_clock(self, clock_frame, current_time):
         hour = current_time.hour
         minute = current_time.minute
@@ -335,3 +364,5 @@ class WorldClockApp(tk.Tk):
 if __name__ == "__main__":
     app = ClockApp()
     app.mainloop()
+
+
