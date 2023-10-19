@@ -7,7 +7,7 @@ class ClockApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("表盘时钟")
-        self.geometry("700x650")
+        self.geometry("700x700")
         self.configure(bg='white') # 创建gui的title,大小，背景
         
         # 创建PhotoImage对象并加载图标图片
@@ -217,41 +217,37 @@ class CountdownTimerApp(tk.Tk):
         self.time_entry.insert(0, "00:05:00")  # 默认设置为5分钟
         self.time_entry.pack()
 
-        self.start_button = tk.Button(self, text="开始倒计时", command=self.start_countdown, font=('Helvetica', 14))
+        self.start_button = tk.Button(self, text="开始倒计时", command=self.start_countdown, font=('Helvetica', 14),state=tk.DISABLED)
         self.start_button.pack(pady=10)
 
         self.stop_button = tk.Button(self, text="停止倒计时", command=self.stop_countdown, font=('Helvetica', 14), state=tk.DISABLED)
-        self.stop_button.pack()
+        self.stop_button.pack(pady=10)
+
+        self.reset_button = tk.Button(self, text="重置定时器", command=self.reset_countdown, font=('Helvetica', 14))
+        self.reset_button.pack()
 
         self.remaining_time = timedelta()
         self.timer_running = False
 
     # 开始倒计时
     def start_countdown(self):
-        if not self.timer_running:
-            input_time = self.time_entry.get()
-            try:
-                hours, minutes, seconds = map(int, input_time.split(':'))
-                self.remaining_time = timedelta(hours=hours, minutes=minutes, seconds=seconds)
-                self.update_timer()
-                self.timer_running = True
-                self.start_button.config(state=tk.DISABLED)
-                self.stop_button.config(state=tk.NORMAL)
-            except ValueError:
-                self.time_label.config(text="无效的时间格式")
-        else:
-            self.update_timer()
-    
+        self.timer_running = True
+        self.start_button.config(state=tk.DISABLED)
+        self.stop_button.config(state=tk.NORMAL)
+        self.update_timer()
+        
+
     # 在倒计时的过程中更新界面
     def update_timer(self):
-        if self.remaining_time.total_seconds() > 0:
+        if self.remaining_time.total_seconds() > 0 and self.timer_running is True:
             self.time_label.config(text=str(self.remaining_time).rjust(8, '0'))
             self.remaining_time -= timedelta(seconds=1)
             self.after(1000, self.update_timer)
-        else:
+        elif self.remaining_time.total_seconds() <= 0:
             self.time_label.config(text="时间到！")
             self.timer_running = False
-            self.start_button.config(state=tk.NORMAL)
+            self.begin_flag = False
+            self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.DISABLED)
 
     # 停止倒计时
@@ -259,6 +255,21 @@ class CountdownTimerApp(tk.Tk):
         self.timer_running = False
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
+    
+    # 重置定时器
+    def reset_countdown(self):
+        input_time = self.time_entry.get()
+        self.timer_running = False
+        try:
+            hours, minutes, seconds = map(int, input_time.split(':'))
+            self.remaining_time = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+            self.time_label.config(text=str(self.remaining_time).rjust(8, '0'))
+            self.start_button.config(state=tk.NORMAL)
+            self.stop_button.config(state=tk.DISABLED)
+            
+        except ValueError:
+            self.time_label.config(text="无效的时间格式")
+
 
 # 世界时钟类
 class WorldClockApp(tk.Tk):
