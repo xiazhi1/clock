@@ -1,3 +1,4 @@
-# clock
+# Tkinter_Clock
 
-this clock is mainly based on the tkinter and python. Hope it can helps you!
+This project is mainly based on Python and Tkinter. The goal of design is to create a simple and useful clock for people to use. Hope it can helps you.
+
